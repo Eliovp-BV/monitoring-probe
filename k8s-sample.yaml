@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-probe-config
+  namespace: default
+data:
+  config.yaml: |
+    services:
+      alias1:
+        service: "service.default.svc.cluster.local:80"
+        checkforstatus: 200
+        shouldcontain: "somestring"
+      alias2:
+        service: "anotherservice.default.svc.cluster.local:80"
+        checkforstatus: 200
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-probe
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitoring-probe
+  template:
+    metadata:
+      labels:
+        app: monitoring-probe
+    spec:
+      containers:
+        - name: monitoring-probe
+          image: your-registry/monitoring-probe:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORT
+              value: "8080"
+            - name: CONFIG_PATH
+              value: /app/config/config.yaml
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: monitoring-probe-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-probe
+  namespace: default
+spec:
+  selector:
+    app: monitoring-probe
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

@@ -1,0 +1,8 @@
+services:
+  alias1:
+    service: "service:80"
+    checkforstatus: 200
+    shouldcontain: "somestring"
+  alias2:
+    service: "anotherservice:80"
+    checkforstatus: 200
