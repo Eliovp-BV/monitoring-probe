@@ -2,8 +2,8 @@ name: Docker Build
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
   pull_request:
 
 jobs:
@@ -26,8 +26,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
+            type=ref,event=tag
             type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
